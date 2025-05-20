@@ -192,7 +192,7 @@ app.get("/cache", async (req, res) => {
   
   const token = req.cookies.userToken;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
-
+  
   try {
     const user = jwt.verify(token, JWT_SECRET);
     const userId = user.id;
@@ -233,6 +233,7 @@ app.get("/viewPost/:id",async(req,res)=>{
 
 app.post("/autosave", async (req, res) => {
   try {
+    console.log("autosaved "+req.body)
     const content = req.body;
     const token = req.cookies.userToken;
     if (!token) return res.status(401).json({ message: "Unauthorized" });
@@ -242,6 +243,7 @@ app.post("/autosave", async (req, res) => {
 
     await redis.set(`autosave:${userId}`, JSON.stringify(content), 'EX', 360000);
     res.json({ message: "Autosaved successfully" });
+    console.log("autosaved ",JSON.stringify(content))
   } catch (err) {
     console.error(err);
     res.status(401).json({ message: "Unauthorized" });

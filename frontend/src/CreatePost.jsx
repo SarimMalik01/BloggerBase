@@ -23,6 +23,17 @@ export default function CreatePost() {
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState([]);
   const typingTimeoutRef = useRef(null);
+  const intervalRef=useRef(null);
+  const postRef = useRef(null); 
+
+
+
+
+
+
+  useEffect(() => {
+  postRef.current = post;
+}, [post]);
 
 
   useEffect(()=>{
@@ -96,24 +107,28 @@ try {
   },[id]);
 
   useEffect(() => {
-  
-  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  console.log("Setting up 45s interval autosave");
 
-    typingTimeoutRef.current = setInterval(() => {
-       handleAutoSaving();
-    }, 45000); 
-  }, []);
+  intervalRef.current = setInterval(() => {
+    console.log("Autosaving from 45-second interval");
+    handleAutoSaving(); 
+  }, 45000);
+
+  return () => {
+    clearInterval(intervalRef.current);
+    console.log("45s interval cleared.");
+  };
+}, []);
 
 
 
 
 
   const triggerAutosave = () => {
-   
+    console.log("saving from 5 seconds")
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     typingTimeoutRef.current = setTimeout(() => {
-     
        handleAutoSaving();
     }, 5000); 
   };
@@ -122,27 +137,34 @@ try {
   
   
 
-  function handleAutoSaving(){
-     console.log(post);
-     const saveData=async()=>{
-      try {
-       const response = await axios.post ('http://localhost:3000/autoSave', post, {
-         withCredentials: true
-        });
-
-     
-
+  function handleAutoSaving() {
+  const saveData = async () => {
+    try {
       
-      }catch(err){
-      console.error("Failed to autosave post:");  
-     }
+      const dataToSave = postRef.current;
 
+      if (!dataToSave || Object.keys(dataToSave).length === 0) {
+        console.warn("Autosave skipped: No valid post data to save.");
+        setAutoSaved(`Skipped save at ${new Date().toLocaleTimeString()}: No content.`);
+        return;
+      }
+
+      console.log("About to autosave with data:", dataToSave);
+      console.log("Current post state (for context):", post); 
+
+      const response = await axios.post('http://localhost:3000/autoSave', dataToSave, {
+        withCredentials: true
+      });
+
+      console.log("Autosave successful:", response.data);
+      setAutoSaved(`Autosaved at ${new Date().toLocaleTimeString()}`);
+    } catch (err) {
+      console.error("Failed to autosave post:", err);
+      setAutoSaved(`Autosave failed at ${new Date().toLocaleTimeString()}`);
     }
-       setAutoSaved(`Autosaved at ${new Date().toLocaleTimeString()}`);
-       console.log("Set autosaved time");
-    saveData();
   }
-
+  saveData();
+}
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     console.log(name+"  "+value)
