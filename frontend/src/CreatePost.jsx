@@ -26,11 +26,12 @@ export default function CreatePost() {
 
 
   useEffect(()=>{
-     if (!id) return; 
+     
 
   const fetchPost = async () => {
-   
-    try{
+   if(id==":id")
+   {
+      try{
       const res = await axios.get(`http://localhost:3000/cache`, {
   withCredentials: true
 });
@@ -53,8 +54,9 @@ export default function CreatePost() {
    catch(err){
     console.log("error occured in cahing layer ",err)
    }
-    
-    try {
+   }
+   else{
+try {
       const formData = new FormData();
        if (id) formData.append("id",id);
        const res = await axios.get(`http://localhost:3000/viewPost/${id}`, {
@@ -85,6 +87,10 @@ export default function CreatePost() {
       console.error("Failed to fetch post data:");
     }
      };
+   }
+    
+    
+    
 
   fetchPost();
   },[id]);
@@ -95,7 +101,7 @@ export default function CreatePost() {
 
     typingTimeoutRef.current = setInterval(() => {
        handleAutoSaving();
-    }, 10000); 
+    }, 45000); 
   }, []);
 
 

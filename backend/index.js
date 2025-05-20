@@ -124,36 +124,15 @@ app.post("/login", async (req, res) => {
 });
 
 app.post("/createPost", uploadMiddleware.single('file'), async (req, res) => {
-   const userId=null;
-   const token = req.cookies.userToken;
-    jwt.verify(token, JWT_SECRET, {}, async (err, info) => {
-      if (err) 
-      {
-        return res.status(401).json({ error: "Invalid token" });
-      }
-
-      userId=info.id;
-    })
-
-
-  const content = await redis.get(`autosave:${userId}`);
-
-  if(content)
-  {
-    return res.json({
-      title:content.title,
-      content:content.content,
-      tags:content.tags,
-      summary:content.summary
-    })
-  }
-
   try {
-    const { id, title, summary, content, tags,isDraft } = req.body;
-    console.log(req.body)
+    const token = req.cookies.userToken;
+    const info = jwt.verify(token, JWT_SECRET); 
+    const userId = info.id;
+
+    const { id, title, summary, content, tags, isDraft } = req.body;
     const parsedTags = tags ? JSON.parse(tags) : [];
     const tagsString = parsedTags.join(',');
-     
+
     let newPath = null;
     if (req.file) {
       const { originalname, path } = req.file;
@@ -161,49 +140,45 @@ app.post("/createPost", uploadMiddleware.single('file'), async (req, res) => {
       newPath = path + '.' + ext;
       fs.renameSync(path, newPath);
     }
-    
-    console.log(newPath)
-    
-    if (id!=":id") {
-      const post = await Post.findById(id);
-      console.log("id is present")
+
+    let post;
+
+    if (id && id !== ":id") {
+      console.log("post id is provided");
+      post = await Post.findById(id);
       if (!post) return res.status(404).json({ error: "Post not found" });
 
       post.title = title || post.title;
       post.summary = summary || post.summary;
       post.content = content || post.content;
       post.tagsString = tagsString || post.tagsString;
-      post.isDraft = isDraft || post.isDraft;
+      post.isDraft = isDraft ?? post.isDraft;
       if (newPath) post.cover = newPath;
 
       await post.save();
-      await redis.del(`autosave:${userId}`);
-      return res.json({ message: "Post Updated", post });
-    }
-
-   console.log("id is not present in req.body");
-    const token = req.cookies.userToken;
-    jwt.verify(token, JWT_SECRET, {}, async (err, info) => {
-      if (err) return res.status(401).json({ error: "Unauthorized" });
-
-      const postDoc = await Post.create({
+    } else {
+      
+      post = await Post.create({
         title,
         summary,
         tagsString,
         content,
         cover: newPath,
-        author: info.id,
+        author: userId,
         isDraft
       });
+    }
 
-      res.json({ message: "Post Created", post: postDoc });
-      await redis.del(`autosave:${info.id}`);
-    });
+    await redis.del(`autosave:${userId}`);
+
+    return res.json({ message: id ? "Post Updated" : "Post Created", post });
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 
 
@@ -214,6 +189,7 @@ app.get("/posts",async(req,res)=>{
 })
 
 app.get("/cache", async (req, res) => {
+  
   const token = req.cookies.userToken;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
@@ -223,15 +199,14 @@ app.get("/cache", async (req, res) => {
 
     const cache = await redis.get(`autosave:${userId}`);
 
-    if (!cache) {
-      
-      return res.json(null);
-    }
-
-    
+    if (cache) {
     const parsedCache = JSON.parse(cache);
     console.log(parsedCache)
     return res.json(parsedCache);
+    }
+
+    
+   
 
   } catch (err) {
     console.error("Error in /cache:", err);
@@ -256,19 +231,23 @@ app.get("/viewPost/:id",async(req,res)=>{
 
 
 
-app.post("/autosave",async(req,res)=>{
-  const content=req.body;
-  const token = req.cookies.userToken;
-    jwt.verify(token, JWT_SECRET, {}, async (err, info) => {
-       if(err) res.json({message:"Unauthorized"})
-       
-       const userId=info.id;
-       await redis.set(`autosave:${userId}`, JSON.stringify(content), 'EX', 3600);
+app.post("/autosave", async (req, res) => {
+  try {
+    const content = req.body;
+    const token = req.cookies.userToken;
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
 
+    const info = jwt.verify(token, JWT_SECRET);
+    const userId = info.id;
 
+    await redis.set(`autosave:${userId}`, JSON.stringify(content), 'EX', 360000);
+    res.json({ message: "Autosaved successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ message: "Unauthorized" });
+  }
+});
 
-    })
-})
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
