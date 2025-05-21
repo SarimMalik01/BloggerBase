@@ -250,6 +250,16 @@ app.post("/autosave", async (req, res) => {
   }
 });
 
+app.get("/logout",async(req,res)=>{
+  console.log("logout called")
+   res.clearCookie('userToken', {
+    httpOnly: true,
+    secure: false, 
+    sameSite: 'lax'
+  });
+  res.status(200).json({ message: 'Logged out' });
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

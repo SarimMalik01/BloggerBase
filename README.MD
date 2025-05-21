@@ -212,6 +212,18 @@ app.use(cors({
 ```
 
 ---
+# Screenshots
+## Authentication
+![Authentication](./assets/Authentication.png)
+## Blog Editor
+![Blog Editor](./assets/PostEditor.png)
+## Published Blogs 
+![Published Blogs](./assets/PublishedPost.png)
+## Drafts
+![Drafts](./assets/Drafts.png)
+## View Post
+![View Post](./assets/ViewPost.png)
+---
 
 ## 🧠 Redis Key Usage
 
