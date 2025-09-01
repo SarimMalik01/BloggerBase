@@ -1,4 +1,4 @@
-# 📝 Blog Platform (React + Express + Redis + MongoDB)
+# 📝 Blog Platform (React + Express + Redis + Node + MongoDB)
 
 This project is a full-stack blogging platform that includes autosaving with Redis, secure JWT-based authentication, drafts, and support for editing published posts. Built with Vite + React on the frontend and Express.js on the backend.
 
@@ -279,4 +279,5 @@ Let me know if you'd like to add:
 - Docker Support
 - Vercel/Render deployment
 - Screenshots or GIF demo
+
 
